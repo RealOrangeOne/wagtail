@@ -1,7 +1,9 @@
 from django import template
 from django.shortcuts import resolve_url
 from django.template.defaulttags import token_kwargs
+from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import render_to_string
+from django.templatetags.cache import CacheNode as DjangoCacheNode
 from django.utils.encoding import force_str
 from django.utils.html import conditional_escape
 
@@ -205,3 +207,56 @@ def wagtail_site(context):
         return None
 
     return Site.find_for_request(request=request)
+
+
+class WagtailCacheNode(DjangoCacheNode):
+    """
+    A modified version of Django's `CacheNode` which is aware of Wagtail's
+    page previews.
+    """
+
+    def render(self, context):
+        try:
+            request = context["request"]
+        except KeyError:
+            # When there's no request, it's not possible to tell whether this is a preview or not.
+            # Bypass the cache to be safe.
+            return self.nodelist.render(context)
+
+        if getattr(request, "is_preview", False):
+            # Skip cache in preview
+            return self.nodelist.render(context)
+
+        return super().render(context)
+
+
+def register_cache_tag(tag_name, node_class):
+    """
+    A helper function to define cache tags without duplicating `do_cache`.
+    """
+
+    @register.tag(tag_name)
+    def do_cache(parser, token):
+        # Implementation copied from `django.templatetags.cache.do_cache`
+        nodelist = parser.parse((f"end{tag_name}",))
+        parser.delete_first_token()
+        tokens = token.split_contents()
+        if len(tokens) < 3:
+            raise TemplateSyntaxError(
+                f"'{tokens[0]}' tag requires at least 2 arguments."
+            )
+        if len(tokens) > 3 and tokens[-1].startswith("using="):
+            cache_name = parser.compile_filter(tokens[-1][len("using=") :])
+            tokens = tokens[:-1]
+        else:
+            cache_name = None
+        return node_class(
+            nodelist,
+            parser.compile_filter(tokens[1]),
+            tokens[2],  # fragment_name can't be a variable.
+            [parser.compile_filter(t) for t in tokens[3:]],
+            cache_name,
+        )
+
+
+register_cache_tag("wagtailcache", WagtailCacheNode)

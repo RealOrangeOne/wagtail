@@ -2,6 +2,7 @@ import json
 
 from django import template
 from django.core.cache import cache
+from django.core.cache.utils import make_template_fragment_key
 from django.http import HttpRequest
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -543,3 +544,56 @@ class TestRichtextTag(TestCase):
             TypeError, "'richtext' template filter received an invalid value"
         ):
             richtext(b"Hello world!")
+
+
+class TestWagtailCacheTag(TestCase):
+    def test_caches(self):
+        request = HttpRequest()
+        tpl = template.Template(
+            """{% load wagtailcore_tags %}{% wagtailcache 100 test %}{{ foo.bar }}{% endwagtailcache %}"""
+        )
+
+        result = tpl.render(
+            template.Context({"request": request, "foo": {"bar": "foobar"}})
+        )
+        self.assertEqual(result, "foobar")
+
+        result2 = tpl.render(
+            template.Context({"request": request, "foo": {"bar": "baz"}})
+        )
+        self.assertEqual(result2, "foobar")
+
+        self.assertEqual(cache.get(make_template_fragment_key("test")), "foobar")
+
+    def test_skips_cache_in_preview(self):
+        request = HttpRequest()
+        request.is_preview = True
+
+        tpl = template.Template(
+            """{% load wagtailcore_tags %}{% wagtailcache 100 test %}{{ foo.bar }}{% endwagtailcache %}"""
+        )
+
+        result = tpl.render(
+            template.Context({"request": request, "foo": {"bar": "foobar"}})
+        )
+        self.assertEqual(result, "foobar")
+
+        result2 = tpl.render(
+            template.Context({"request": request, "foo": {"bar": "baz"}})
+        )
+        self.assertEqual(result2, "baz")
+
+        self.assertIsNone(cache.get(make_template_fragment_key("test")))
+
+    def test_no_request(self):
+        tpl = template.Template(
+            """{% load wagtailcore_tags %}{% wagtailcache 100 test %}{{ foo.bar }}{% endwagtailcache %}"""
+        )
+
+        result = tpl.render(template.Context({"foo": {"bar": "foobar"}}))
+        self.assertEqual(result, "foobar")
+
+        result2 = tpl.render(template.Context({"foo": {"bar": "baz"}}))
+        self.assertEqual(result2, "baz")
+
+        self.assertIsNone(cache.get(make_template_fragment_key("test")))
