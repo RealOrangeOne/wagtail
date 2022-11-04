@@ -1,5 +1,6 @@
 from django import template
 from django.shortcuts import resolve_url
+from django.template import Variable
 from django.template.defaulttags import token_kwargs
 from django.template.exceptions import TemplateSyntaxError
 from django.template.loader import render_to_string
@@ -8,7 +9,7 @@ from django.utils.encoding import force_str
 from django.utils.html import conditional_escape
 
 from wagtail import VERSION, __version__
-from wagtail.models import Page, Site
+from wagtail.models import PAGE_TEMPLATE_VAR, Page, Site
 from wagtail.rich_text import RichText, expand_db_html
 from wagtail.utils.version import get_main_version
 
@@ -230,6 +231,38 @@ class WagtailCacheNode(DjangoCacheNode):
         return super().render(context)
 
 
+class WagtailPageCacheNode(WagtailCacheNode):
+    """
+    A modified version of Django's `CacheNode` designed for caching fragments
+    of pages.
+
+    This tag intentionally makes assumptions about what context is available.
+    If these assumptions aren't valid, it's recommended to just use `{% wagtailcache %}`.
+    """
+
+    CACHE_SITE_TEMPLATE_VAR = "wagtail_page_cache_site"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Pretend the user specified the page and site as part of context
+        self.vary_on.extend(
+            [
+                Variable(f"{self.CACHE_SITE_TEMPLATE_VAR}.pk"),
+                Variable(f"{PAGE_TEMPLATE_VAR}.pk"),
+            ]
+        )
+
+    def render(self, context):
+        if "request" in context:
+            # Inject the site into context to be picked up when resolving `vary_on`
+            context[self.CACHE_SITE_TEMPLATE_VAR] = Site.find_for_request(
+                context["request"]
+            )
+
+        return super().render(context)
+
+
 def register_cache_tag(tag_name, node_class):
     """
     A helper function to define cache tags without duplicating `do_cache`.
@@ -260,3 +293,4 @@ def register_cache_tag(tag_name, node_class):
 
 
 register_cache_tag("wagtailcache", WagtailCacheNode)
+register_cache_tag("wagtailpagecache", WagtailPageCacheNode)

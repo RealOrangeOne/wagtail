@@ -4,6 +4,7 @@ from django import template
 from django.core.cache import cache
 from django.core.cache.utils import make_template_fragment_key
 from django.http import HttpRequest
+from django.template import VariableDoesNotExist
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls.exceptions import NoReverseMatch
@@ -597,3 +598,101 @@ class TestWagtailCacheTag(TestCase):
         self.assertEqual(result2, "baz")
 
         self.assertIsNone(cache.get(make_template_fragment_key("test")))
+
+
+class TestWagtailPageCacheTag(TestCase):
+    fixtures = ["test.json"]
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.page_1 = Page.objects.first()
+        cls.page_2 = Page.objects.all()[2]
+        cls.site = Site.objects.get(hostname="localhost", port=80)
+
+    def test_caches(self):
+        request = HttpRequest()
+        request.META["HTTP_HOST"] = "localhost"
+        request.META["SERVER_PORT"] = 80
+        tpl = template.Template(
+            """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
+        )
+
+        result = tpl.render(
+            template.Context(
+                {"request": request, "foo": {"bar": "foobar"}, "page": self.page_1}
+            )
+        )
+        self.assertEqual(result, "foobar")
+
+        result2 = tpl.render(
+            template.Context(
+                {"request": request, "foo": {"bar": "baz"}, "page": self.page_1}
+            )
+        )
+        self.assertEqual(result2, "foobar")
+
+        self.assertEqual(
+            cache.get(
+                make_template_fragment_key("test", [self.page_1.id, self.site.id])
+            ),
+            "foobar",
+        )
+
+    def test_skips_cache_in_preview(self):
+        request = HttpRequest()
+        request.META["HTTP_HOST"] = "localhost"
+        request.META["SERVER_PORT"] = 80
+        request.is_preview = True
+
+        tpl = template.Template(
+            """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
+        )
+
+        result = tpl.render(
+            template.Context(
+                {"request": request, "foo": {"bar": "foobar"}, "page": self.page_1}
+            )
+        )
+        self.assertEqual(result, "foobar")
+
+        result2 = tpl.render(
+            template.Context(
+                {"request": request, "foo": {"bar": "baz"}, "page": self.page_1}
+            )
+        )
+        self.assertEqual(result2, "baz")
+
+        self.assertIsNone(cache.get(make_template_fragment_key("test")))
+
+    def test_no_request(self):
+        tpl = template.Template(
+            """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
+        )
+
+        result = tpl.render(
+            template.Context({"foo": {"bar": "foobar"}, "page": self.page_1})
+        )
+        self.assertEqual(result, "foobar")
+
+        result2 = tpl.render(
+            template.Context({"foo": {"bar": "baz"}, "page": self.page_1})
+        )
+        self.assertEqual(result2, "baz")
+
+        self.assertIsNone(
+            cache.get(
+                make_template_fragment_key("test", [self.page_1.id, self.site.id])
+            )
+        )
+
+    def test_no_page(self):
+        request = HttpRequest()
+
+        tpl = template.Template(
+            """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
+        )
+
+        with self.assertRaises(VariableDoesNotExist) as e:
+            tpl.render(template.Context({"request": request, "foo": {"bar": "foobar"}}))
+
+        self.assertEqual(e.exception.params[0], "page")
