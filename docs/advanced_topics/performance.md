@@ -100,6 +100,50 @@ For some images, it may be beneficial to lazy load images, so the rest of the pa
 
 This optimisation is already handled for you for images in the admin site.
 
+## Template fragment caching
+
+Django supports [template fragment caching](https://docs.djangoproject.com/en/stable/topics/cache/#template-fragment-caching), which allows caching portions of a template. Using Django's `{% cache %}` tag natively with Wagtail can be [dangerous](https://github.com/wagtail/wagtail/issues/5074) as it can result in preview content being shown to end users. Instead, Wagtail provides 2 extra template tags in `wagtailcore_tags`:
+
+### Preview-aware caching
+
+`{% wagtailcache %}` functions identically to Django's `{% cache %}` tag, but does nothing during preview requests (it neither reads from the cache nor updates it when one doesn't exist).
+
+```html+django
+{% wagtailcache 500 "sidebar" %}
+    <!-- sidebar -->
+{% endwagtailcache %}
+```
+
+### Page-aware caching
+
+`{% wagtailpagecache %}` is an extension of `{% wagtailcache %}`, but is also aware of the current `page` and `site`, and includes those as part of the cache key. This makes it possible. `{% wagtailpagecache %}` intentionally makes assumptions - for more customization it's recommended to use `{% wagtailcache %}`.
+
+```html+django
+{% wagtailpagecache 500 "hero" %}
+    <!-- hero -->
+{% endwagtailcache %}
+```
+
+This is identical to:
+
+```html+django
+{% wagtail_site as current_site %}
+
+{% wagtailcache 500 "hero" page.id current_site.id %}
+    <!-- hero -->
+{% endwagtailcache %}
+```
+
+If you want to obtain the cache key for, you can use `make_wagtail_template_fragment_key` (based on Django's [`make_template_fragment_key`](django.core.cache.utils.make_template_fragment_key)):
+
+```python
+from django.core.cache import cache
+from wagtail.coreutils import make_wagtail_template_fragment_key
+
+key = make_wagtail_template_fragment_key("hero", page, site)
+cache.delete(key)  # invalidates cached template fragment
+```
+
 ## Django
 
 Wagtail is built on Django. Many of the [performance tips](django:topics/performance) set out by Django are also applicable to Wagtail.
