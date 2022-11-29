@@ -116,7 +116,7 @@ Django supports [template fragment caching](https://docs.djangoproject.com/en/st
 
 ### Page-aware caching
 
-`{% wagtailpagecache %}` is an extension of `{% wagtailcache %}`, but is also aware of the current `page` and `site`, and includes those as part of the cache key. This makes it possible. `{% wagtailpagecache %}` intentionally makes assumptions - for more customization it's recommended to use `{% wagtailcache %}`.
+`{% wagtailpagecache %}` is an extension of `{% wagtailcache %}`, but is also aware of the current `page` and `site`, and includes those as part of the cache key. This makes it possible to easily add caching around parts of the page without worrying about the page it's on. `{% wagtailpagecache %}` intentionally makes assumptions - for more customization it's recommended to use `{% wagtailcache %}`.
 
 ```html+django
 {% wagtailpagecache 500 "hero" %}
@@ -134,7 +134,7 @@ This is identical to:
 {% endwagtailcache %}
 ```
 
-If you want to obtain the cache key for, you can use `make_wagtail_template_fragment_key` (based on Django's [`make_template_fragment_key`](django.core.cache.utils.make_template_fragment_key)):
+If you want to obtain the cache key, you can use `make_wagtail_template_fragment_key` (based on Django's [`make_template_fragment_key`](django.core.cache.utils.make_template_fragment_key)):
 
 ```python
 from django.core.cache import cache
