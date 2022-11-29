@@ -549,7 +549,7 @@ class TestRichtextTag(TestCase):
 
 class TestWagtailCacheTag(TestCase):
     def test_caches(self):
-        request = HttpRequest()
+        request = get_dummy_request()
         tpl = template.Template(
             """{% load wagtailcore_tags %}{% wagtailcache 100 test %}{{ foo.bar }}{% endwagtailcache %}"""
         )
@@ -567,7 +567,7 @@ class TestWagtailCacheTag(TestCase):
         self.assertEqual(cache.get(make_template_fragment_key("test")), "foobar")
 
     def test_skips_cache_in_preview(self):
-        request = HttpRequest()
+        request = get_dummy_request()
         request.is_preview = True
 
         tpl = template.Template(
@@ -610,9 +610,7 @@ class TestWagtailPageCacheTag(TestCase):
         cls.site = Site.objects.get(hostname="localhost", port=80)
 
     def test_caches(self):
-        request = HttpRequest()
-        request.META["HTTP_HOST"] = "localhost"
-        request.META["SERVER_PORT"] = 80
+        request = get_dummy_request(site=self.site)
         tpl = template.Template(
             """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
         )
@@ -639,9 +637,7 @@ class TestWagtailPageCacheTag(TestCase):
         )
 
     def test_skips_cache_in_preview(self):
-        request = HttpRequest()
-        request.META["HTTP_HOST"] = "localhost"
-        request.META["SERVER_PORT"] = 80
+        request = get_dummy_request(site=self.site)
         request.is_preview = True
 
         tpl = template.Template(
@@ -686,7 +682,7 @@ class TestWagtailPageCacheTag(TestCase):
         )
 
     def test_no_page(self):
-        request = HttpRequest()
+        request = get_dummy_request()
 
         tpl = template.Template(
             """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
