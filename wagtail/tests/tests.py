@@ -15,6 +15,7 @@ from wagtail.coreutils import (
     make_wagtail_template_fragment_key,
     resolve_model_string,
 )
+from wagtail.core.templatetags.wagtailcore_tags import WagtailPageCacheNode
 from wagtail.models import Locale, Page, Site, SiteRootPath
 from wagtail.models.sites import (
     SITE_ROOT_PATHS_CACHE_KEY,
@@ -639,6 +640,20 @@ class TestWagtailPageCacheTag(TestCase):
             ),
             "foobar",
         )
+
+    def test_doesnt_pollute_cache(self):
+        request = get_dummy_request(site=self.site)
+        tpl = template.Template(
+            """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
+        )
+
+        context = template.Context(
+            {"request": request, "foo": {"bar": "foobar"}, "page": self.page_1}
+        )
+        result = tpl.render(context)
+        self.assertEqual(result, "foobar")
+
+        self.assertNotIn(WagtailPageCacheNode.CACHE_SITE_TEMPLATE_VAR, context)
 
     def test_skips_cache_in_preview(self):
         request = get_dummy_request(site=self.site)

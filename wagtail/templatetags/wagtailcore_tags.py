@@ -256,10 +256,14 @@ class WagtailPageCacheNode(WagtailCacheNode):
     def render(self, context):
         if "request" in context:
             # Inject the site into context to be picked up when resolving `vary_on`
-            context[self.CACHE_SITE_TEMPLATE_VAR] = Site.find_for_request(
-                context["request"]
-            )
-
+            with context.update(
+                {
+                    self.CACHE_SITE_TEMPLATE_VAR: Site.find_for_request(
+                        context["request"]
+                    )
+                }
+            ):
+                return super().render(context)
         return super().render(context)
 
 
