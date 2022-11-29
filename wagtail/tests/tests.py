@@ -10,7 +10,11 @@ from django.test.utils import override_settings
 from django.urls.exceptions import NoReverseMatch
 from django.utils.safestring import SafeString
 
-from wagtail.coreutils import get_dummy_request, resolve_model_string
+from wagtail.coreutils import (
+    get_dummy_request,
+    make_wagtail_template_fragment_key,
+    resolve_model_string,
+)
 from wagtail.models import Locale, Page, Site, SiteRootPath
 from wagtail.models.sites import (
     SITE_ROOT_PATHS_CACHE_KEY,
@@ -631,7 +635,7 @@ class TestWagtailPageCacheTag(TestCase):
 
         self.assertEqual(
             cache.get(
-                make_template_fragment_key("test", [self.page_1.id, self.site.id])
+                make_wagtail_template_fragment_key("test", self.page_1, self.site)
             ),
             "foobar",
         )
@@ -658,7 +662,11 @@ class TestWagtailPageCacheTag(TestCase):
         )
         self.assertEqual(result2, "baz")
 
-        self.assertIsNone(cache.get(make_template_fragment_key("test")))
+        self.assertIsNone(
+            cache.get(
+                make_wagtail_template_fragment_key("test", self.page_1, self.site)
+            )
+        )
 
     def test_no_request(self):
         tpl = template.Template(
@@ -677,7 +685,7 @@ class TestWagtailPageCacheTag(TestCase):
 
         self.assertIsNone(
             cache.get(
-                make_template_fragment_key("test", [self.page_1.id, self.site.id])
+                make_wagtail_template_fragment_key("test", self.page_1, self.site)
             )
         )
 
@@ -692,3 +700,9 @@ class TestWagtailPageCacheTag(TestCase):
             tpl.render(template.Context({"request": request, "foo": {"bar": "foobar"}}))
 
         self.assertEqual(e.exception.params[0], "page")
+
+    def test_cache_key(self):
+        self.assertEqual(
+            make_wagtail_template_fragment_key("test", self.page_1, self.site),
+            make_template_fragment_key("test", vary_on=[self.page_1.id, self.site.id]),
+        )
