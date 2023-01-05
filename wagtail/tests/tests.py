@@ -553,6 +553,9 @@ class TestRichtextTag(TestCase):
 
 
 class TestWagtailCacheTag(TestCase):
+    def setUp(self):
+        cache.clear()
+
     def test_caches(self):
         request = get_dummy_request()
         tpl = template.Template(
