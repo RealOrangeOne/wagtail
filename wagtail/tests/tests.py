@@ -10,12 +10,12 @@ from django.test.utils import override_settings
 from django.urls.exceptions import NoReverseMatch
 from django.utils.safestring import SafeString
 
+from wagtail.core.templatetags.wagtailcore_tags import WagtailPageCacheNode
 from wagtail.coreutils import (
     get_dummy_request,
     make_wagtail_template_fragment_key,
     resolve_model_string,
 )
-from wagtail.core.templatetags.wagtailcore_tags import WagtailPageCacheNode
 from wagtail.models import Locale, Page, Site, SiteRootPath
 from wagtail.models.sites import (
     SITE_ROOT_PATHS_CACHE_KEY,
@@ -722,5 +722,7 @@ class TestWagtailPageCacheTag(TestCase):
     def test_cache_key(self):
         self.assertEqual(
             make_wagtail_template_fragment_key("test", self.page_1, self.site),
-            make_template_fragment_key("test", vary_on=[self.page_1.id, self.site.id]),
+            make_template_fragment_key(
+                "test", vary_on=[self.page_1.cache_key, self.site.id]
+            ),
         )

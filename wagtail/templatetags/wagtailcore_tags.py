@@ -248,8 +248,8 @@ class WagtailPageCacheNode(WagtailCacheNode):
         # Pretend the user specified the page and site as part of context
         self.vary_on.extend(
             [
+                Variable(f"{PAGE_TEMPLATE_VAR}.cache_key"),
                 Variable(f"{self.CACHE_SITE_TEMPLATE_VAR}.pk"),
-                Variable(f"{PAGE_TEMPLATE_VAR}.pk"),
             ]
         )
 

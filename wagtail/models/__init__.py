@@ -10,6 +10,7 @@ as Page.
 """
 
 import functools
+import hashlib
 import logging
 import posixpath
 import uuid
@@ -2428,6 +2429,29 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         This returns a list of paths to invalidate in a frontend cache
         """
         return ["/"]
+
+    @property
+    def cache_key(self):
+        """
+        A generic cache key to identify a page in its current state.
+        Should the page change, so will the key.
+        """
+
+        # The components which make up the cache key. Any change to a
+        # page should be reflected in a change to at least one of these
+        # attributes
+
+        hasher = hashlib.md5()
+
+        for component in [
+            self.id,
+            self.url_path,
+            self.path,
+            self.last_published_at.isoformat() if self.last_published_at else None,
+        ]:
+            hasher.update(str(component).encode())
+
+        return hasher.hexdigest()
 
     def get_sitemap_urls(self, request=None):
         return [

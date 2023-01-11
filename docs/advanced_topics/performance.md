@@ -129,7 +129,7 @@ This is identical to:
 ```html+django
 {% wagtail_site as current_site %}
 
-{% wagtailcache 500 "hero" page.id current_site.id %}
+{% wagtailcache 500 "hero" page.cache_key current_site.id %}
     <!-- hero -->
 {% endwagtailcache %}
 ```

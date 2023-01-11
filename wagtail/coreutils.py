@@ -574,5 +574,5 @@ def make_wagtail_template_fragment_key(fragment_name, page, site, vary_on=None):
     """
     if vary_on is None:
         vary_on = []
-    vary_on.extend([site.id, page.id])
+    vary_on.extend([page.cache_key, site.id])
     return make_template_fragment_key(fragment_name, vary_on)
