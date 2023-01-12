@@ -165,7 +165,7 @@ def get_cache_key_components(self):
     return components
 ```
 
-Note that modifying the cache key will invalidate existing caches.
+When manually modifying a page, it may not result in a different cache key if the default components don't get changed. To ensure the cache key is changed, be sure to publish the resulting page.
 
 ## Django
 
