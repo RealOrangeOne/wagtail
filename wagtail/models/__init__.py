@@ -2439,7 +2439,6 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         return [
             self.id,
             self.url_path,
-            self.path,
             self.last_published_at.isoformat() if self.last_published_at else None,
         ]
 
