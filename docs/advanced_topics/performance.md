@@ -147,13 +147,16 @@ cache.delete(key)  # invalidates cached template fragment
 
 ## Page cache key
 
-It's often necessary to cache a value based on an entire page, rather than a specific value. For this, {attr}`~wagtail.models.Page.cache_key` can be used to get a unique value for the state of a page. Should something about the page change, so will its cache key. This cache key is used to power the [page-aware caching](page_aware_caching).
+It's often necessary to cache a value based on an entire page, rather than a specific value. For this, {attr}`~wagtail.models.Page.cache_key` can be used to get a unique value for the state of a page. Should something about the page change, so will its cache key. This cache key can be used as part of a cache key (as opposed to being used directly) for Django's caching framework:
 
 ```python
 from django.core.cache import cache
 
 result = page.expensive_operation()
 cache.set("expensive_result_" + page.cache_key, result, 3600)
+
+# Later...
+cache.get("expensive_result_" + page.cache_key)
 ```
 
 To modify the cache key, such as by adding another property to be included, you can override {attr}`~wagtail.models.Page.get_cache_key_components`:
