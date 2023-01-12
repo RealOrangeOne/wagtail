@@ -43,7 +43,7 @@ from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils import translation as translation
 from django.utils.cache import patch_cache_control
-from django.utils.encoding import force_str
+from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import Promise, cached_property
 from django.utils.module_loading import import_string
 from django.utils.text import capfirst, slugify
@@ -2430,26 +2430,32 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         """
         return ["/"]
 
+    def get_cache_key_components(self):
+        """
+        The components of a ``Page`` which make up the ``cache_key``. Any change to a
+        page should be reflected in a change to at least one of these components.
+        """
+
+        return [
+            self.id,
+            self.url_path,
+            self.path,
+            self.last_published_at.isoformat() if self.last_published_at else None,
+        ]
+
     @property
     def cache_key(self):
         """
         A generic cache key to identify a page in its current state.
         Should the page change, so will the key.
-        """
 
-        # The components which make up the cache key. Any change to a
-        # page should be reflected in a change to at least one of these
-        # attributes
+        Customizations to the cache key should be made in ``get_cache_key_components``.
+        """
 
         hasher = hashlib.md5()
 
-        for component in [
-            self.id,
-            self.url_path,
-            self.path,
-            self.last_published_at.isoformat() if self.last_published_at else None,
-        ]:
-            hasher.update(str(component).encode())
+        for component in self.get_cache_key_components():
+            hasher.update(force_bytes(component))
 
         return hasher.hexdigest()
 

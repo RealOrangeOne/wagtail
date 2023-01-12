@@ -316,6 +316,8 @@ See also [django-treebeard](https://django-treebeard.readthedocs.io/en/latest/in
 
     .. automethod:: update_aliases
 
+    .. automethod:: get_cache_key_components
+
     .. autoattribute:: cache_key
 ```
 
