@@ -10,7 +10,7 @@ from django.test.utils import override_settings
 from django.urls.exceptions import NoReverseMatch
 from django.utils.safestring import SafeString
 
-from wagtail.core.templatetags.wagtailcore_tags import WagtailPageCacheNode
+from wagtail.templatetags.wagtail_cache import WagtailPageCacheNode
 from wagtail.coreutils import (
     get_dummy_request,
     make_wagtail_template_fragment_key,
@@ -559,7 +559,7 @@ class TestWagtailCacheTag(TestCase):
     def test_caches(self):
         request = get_dummy_request()
         tpl = template.Template(
-            """{% load wagtailcore_tags %}{% wagtailcache 100 test %}{{ foo.bar }}{% endwagtailcache %}"""
+            """{% load wagtail_cache %}{% wagtailcache 100 test %}{{ foo.bar }}{% endwagtailcache %}"""
         )
 
         result = tpl.render(
@@ -579,7 +579,7 @@ class TestWagtailCacheTag(TestCase):
         request.is_preview = True
 
         tpl = template.Template(
-            """{% load wagtailcore_tags %}{% wagtailcache 100 test %}{{ foo.bar }}{% endwagtailcache %}"""
+            """{% load wagtail_cache %}{% wagtailcache 100 test %}{{ foo.bar }}{% endwagtailcache %}"""
         )
 
         result = tpl.render(
@@ -596,7 +596,7 @@ class TestWagtailCacheTag(TestCase):
 
     def test_no_request(self):
         tpl = template.Template(
-            """{% load wagtailcore_tags %}{% wagtailcache 100 test %}{{ foo.bar }}{% endwagtailcache %}"""
+            """{% load wagtail_cache %}{% wagtailcache 100 test %}{{ foo.bar }}{% endwagtailcache %}"""
         )
 
         result = tpl.render(template.Context({"foo": {"bar": "foobar"}}))
@@ -620,7 +620,7 @@ class TestWagtailPageCacheTag(TestCase):
     def test_caches(self):
         request = get_dummy_request(site=self.site)
         tpl = template.Template(
-            """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
+            """{% load wagtail_cache %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
         )
 
         result = tpl.render(
@@ -647,7 +647,7 @@ class TestWagtailPageCacheTag(TestCase):
     def test_doesnt_pollute_cache(self):
         request = get_dummy_request(site=self.site)
         tpl = template.Template(
-            """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
+            """{% load wagtail_cache %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
         )
 
         context = template.Context(
@@ -663,7 +663,7 @@ class TestWagtailPageCacheTag(TestCase):
         request.is_preview = True
 
         tpl = template.Template(
-            """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
+            """{% load wagtail_cache %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
         )
 
         result = tpl.render(
@@ -688,7 +688,7 @@ class TestWagtailPageCacheTag(TestCase):
 
     def test_no_request(self):
         tpl = template.Template(
-            """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
+            """{% load wagtail_cache %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
         )
 
         result = tpl.render(
@@ -711,7 +711,7 @@ class TestWagtailPageCacheTag(TestCase):
         request = get_dummy_request()
 
         tpl = template.Template(
-            """{% load wagtailcore_tags %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
+            """{% load wagtail_cache %}{% wagtailpagecache 100 test %}{{ foo.bar }}{% endwagtailpagecache %}"""
         )
 
         with self.assertRaises(VariableDoesNotExist) as e:

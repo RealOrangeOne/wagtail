@@ -102,13 +102,15 @@ This optimisation is already handled for you for images in the admin site.
 
 ## Template fragment caching
 
-Django supports [template fragment caching](https://docs.djangoproject.com/en/stable/topics/cache/#template-fragment-caching), which allows caching portions of a template. Using Django's `{% cache %}` tag natively with Wagtail can be [dangerous](https://github.com/wagtail/wagtail/issues/5074) as it can result in preview content being shown to end users. Instead, Wagtail provides 2 extra template tags in `wagtailcore_tags`:
+Django supports [template fragment caching](https://docs.djangoproject.com/en/stable/topics/cache/#template-fragment-caching), which allows caching portions of a template. Using Django's `{% cache %}` tag natively with Wagtail can be [dangerous](https://github.com/wagtail/wagtail/issues/5074) as it can result in preview content being shown to end users. Instead, Wagtail provides 2 extra template tags which can be loaded from `wagtail_cache`:
 
 ### Preview-aware caching
 
 `{% wagtailcache %}` functions identically to Django's `{% cache %}` tag, but does nothing during preview requests (it neither reads from the cache nor updates it when one doesn't exist).
 
 ```html+django
+{% load wagtail_cache %}
+
 {% wagtailcache 500 "sidebar" %}
     <!-- sidebar -->
 {% endwagtailcache %}
@@ -120,6 +122,8 @@ Django supports [template fragment caching](https://docs.djangoproject.com/en/st
 `{% wagtailpagecache %}` is an extension of `{% wagtailcache %}`, but is also aware of the current `page` and `site`, and includes those as part of the cache key. This makes it possible to easily add caching around parts of the page without worrying about the page it's on. `{% wagtailpagecache %}` intentionally makes assumptions - for more customization it's recommended to use `{% wagtailcache %}`.
 
 ```html+django
+{% load wagtail_cache %}
+
 {% wagtailpagecache 500 "hero" %}
     <!-- hero -->
 {% endwagtailcache %}
