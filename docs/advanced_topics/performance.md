@@ -163,7 +163,7 @@ cache.set("expensive_result_" + page.cache_key, result, 3600)
 cache.get("expensive_result_" + page.cache_key)
 ```
 
-To modify the cache key, such as by adding another property to be included, you can override {attr}`~wagtail.models.Page.get_cache_key_components`:
+To modify the cache key, such as including a custom model field value, you can override {attr}`~wagtail.models.Page.get_cache_key_components`:
 
 ```python
 def get_cache_key_components(self):
