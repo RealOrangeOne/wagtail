@@ -172,7 +172,7 @@ def get_cache_key_components(self):
     return components
 ```
 
-When manually modifying a page, it may not result in a different cache key if the default components don't get changed. To ensure the cache key is changed, be sure to publish the resulting page.
+Manually updating a page might not result in a change to its cache key, unless the default component field values are modified directly. To be sure of a change in the cache key value, try saving the changes to a `Revision` instead, and then publishing it.
 
 ## Django
 
