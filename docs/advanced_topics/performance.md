@@ -106,7 +106,7 @@ Django supports [template fragment caching](https://docs.djangoproject.com/en/st
 
 ### Preview-aware caching
 
-`{% wagtailcache %}` functions identically to Django's `{% cache %}` tag, but does nothing during preview requests (it neither reads from the cache nor updates it when one doesn't exist).
+The `{% wagtailcache %}` tag functions similarly to Django's `{% cache %}` tag, but will neither cache or serve cached content when previewing a page (or other model) in Wagtail.
 
 ```html+django
 {% load wagtail_cache %}
