@@ -4,7 +4,7 @@ from django import template
 from django.core.cache import cache
 from django.core.cache.utils import make_template_fragment_key
 from django.http import HttpRequest
-from django.template import VariableDoesNotExist
+from django.template import TemplateSyntaxError, VariableDoesNotExist
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls.exceptions import NoReverseMatch
@@ -605,7 +605,16 @@ class TestWagtailCacheTag(TestCase):
         result2 = tpl.render(template.Context({"foo": {"bar": "baz"}}))
         self.assertEqual(result2, "baz")
 
-        self.assertIsNone(cache.get(make_template_fragment_key("test")))
+        self.assertIsNone(cache.get(make_template_fragment_key("test")))  #
+
+    def test_invalid_usage(self):
+        with self.assertRaises(TemplateSyntaxError) as e:
+            template.Template(
+                """{% load wagtail_cache %}{% wagtailcache 100 %}{{ foo.bar }}{% endwagtailcache %}"""
+            )
+        self.assertEqual(
+            e.exception.args[0], "'wagtailcache' tag requires at least 2 arguments."
+        )
 
 
 class TestWagtailPageCacheTag(TestCase):
@@ -725,4 +734,13 @@ class TestWagtailPageCacheTag(TestCase):
             make_template_fragment_key(
                 "test", vary_on=[self.page_1.cache_key, self.site.id]
             ),
+        )
+
+    def test_invalid_usage(self):
+        with self.assertRaises(TemplateSyntaxError) as e:
+            template.Template(
+                """{% load wagtail_cache %}{% wagtailpagecache 100 %}{{ foo.bar }}{% endwagtailpagecache %}"""
+            )
+        self.assertEqual(
+            e.exception.args[0], "'wagtailpagecache' tag requires at least 2 arguments."
         )
