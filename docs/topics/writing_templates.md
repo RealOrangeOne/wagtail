@@ -290,3 +290,81 @@ Sometimes you may wish to vary the template output depending on whether the page
 
 If the page is being previewed, `request.preview_mode` can be used to determine the specific preview mode being used,
 if the page supports [multiple preview modes](wagtail.models.Page.preview_modes).
+
+(template_fragment_caching)=
+
+## Template fragment caching
+
+Django supports [template fragment caching](https://docs.djangoproject.com/en/stable/topics/cache/#template-fragment-caching), which allows caching portions of a template. Using Django's `{% cache %}` tag natively with Wagtail can be [dangerous](https://github.com/wagtail/wagtail/issues/5074) as it can result in preview content being shown to end users. Instead, Wagtail provides 2 extra template tags which can be loaded from `wagtail_cache`:
+
+(wagtailcache)=
+
+### Preview-aware caching
+
+The `{% wagtailcache %}` tag functions similarly to Django's `{% cache %}` tag, but will neither cache or serve cached content when previewing a page (or other model) in Wagtail.
+
+```html+django
+{% load wagtail_cache %}
+
+{% wagtailcache 500 "sidebar" %}
+    <!-- sidebar -->
+{% endwagtailcache %}
+```
+(wagtailpagecache)=
+
+### Page-aware caching
+
+`{% wagtailpagecache %}` is an extension of `{% wagtailcache %}`, but is also aware of the current `page` and `site`, and includes those as part of the cache key. This makes it possible to easily add caching around parts of the page without worrying about the page it's on. `{% wagtailpagecache %}` intentionally makes assumptions - for more customization it's recommended to use `{% wagtailcache %}`.
+
+```html+django
+{% load wagtail_cache %}
+
+{% wagtailpagecache 500 "hero" %}
+    <!-- hero -->
+{% endwagtailcache %}
+```
+
+This is identical to:
+
+```html+django
+{% wagtail_site as current_site %}
+
+{% wagtailcache 500 "hero" page.cache_key current_site.id %}
+    <!-- hero -->
+{% endwagtailcache %}
+```
+
+If you want to obtain the cache key, you can use `make_wagtail_template_fragment_key` (based on Django's [`make_template_fragment_key`](django.core.cache.utils.make_template_fragment_key)):
+
+```python
+from django.core.cache import cache
+from wagtail.coreutils import make_wagtail_template_fragment_key
+
+key = make_wagtail_template_fragment_key("hero", page, site)
+cache.delete(key)  # invalidates cached template fragment
+```
+
+## Page cache key
+
+It's often necessary to cache a value based on an entire page, rather than a specific value. For this, {attr}`~wagtail.models.Page.cache_key` can be used to get a unique value for the state of a page. Should something about the page change, so will its cache key. You can also use the value to create longer, more specific cache keys when using Django's caching framework directly. For example:
+
+```python
+from django.core.cache import cache
+
+result = page.expensive_operation()
+cache.set("expensive_result_" + page.cache_key, result, 3600)
+
+# Later...
+cache.get("expensive_result_" + page.cache_key)
+```
+
+To modify the cache key, such as including a custom model field value, you can override {attr}`~wagtail.models.Page.get_cache_key_components`:
+
+```python
+def get_cache_key_components(self):
+    components = super().get_cache_key_components()
+    components.append(self.external_slug)
+    return components
+```
+
+Manually updating a page might not result in a change to its cache key, unless the default component field values are modified directly. To be sure of a change in the cache key value, try saving the changes to a `Revision` instead, and then publishing it.
