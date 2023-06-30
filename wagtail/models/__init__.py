@@ -2432,7 +2432,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
 
     def get_cache_key_components(self):
         """
-        The components of a ``Page`` which make up the ``cache_key``. Any change to a
+        The components of a :class:`Page` which make up the :attr:`cache_key`. Any change to a
         page should be reflected in a change to at least one of these components.
         """
 
@@ -2448,7 +2448,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         A generic cache key to identify a page in its current state.
         Should the page change, so will the key.
 
-        Customizations to the cache key should be made in ``get_cache_key_components``.
+        Customizations to the cache key should be made in :attr:`get_cache_key_components`.
         """
 
         hasher = safe_md5()
