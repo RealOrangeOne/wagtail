@@ -574,6 +574,29 @@ class TestWagtailCacheTag(TestCase):
 
         self.assertEqual(cache.get(make_template_fragment_key("test")), "foobar")
 
+    def test_caches_on_additional_parameters(self):
+        request = get_dummy_request()
+        tpl = template.Template(
+            """{% load wagtail_cache %}{% wagtailcache 100 test foo %}{{ foo.bar }}{% endwagtailcache %}"""
+        )
+
+        result = tpl.render(
+            template.Context({"request": request, "foo": {"bar": "foobar"}})
+        )
+        self.assertEqual(result, "foobar")
+
+        result2 = tpl.render(
+            template.Context({"request": request, "foo": {"bar": "baz"}})
+        )
+        self.assertEqual(result2, "baz")
+
+        self.assertEqual(
+            cache.get(make_template_fragment_key("test", [{"bar": "foobar"}])), "foobar"
+        )
+        self.assertEqual(
+            cache.get(make_template_fragment_key("test", [{"bar": "baz"}])), "baz"
+        )
+
     def test_skips_cache_in_preview(self):
         request = get_dummy_request()
         request.is_preview = True
@@ -651,6 +674,43 @@ class TestWagtailPageCacheTag(TestCase):
                 make_wagtail_template_fragment_key("test", self.page_1, self.site)
             ),
             "foobar",
+        )
+
+    def test_caches_additional_parameters(self):
+        request = get_dummy_request(site=self.site)
+        tpl = template.Template(
+            """{% load wagtail_cache %}{% wagtailpagecache 100 test foo %}{{ foo.bar }}{% endwagtailpagecache %}"""
+        )
+
+        result = tpl.render(
+            template.Context(
+                {"request": request, "foo": {"bar": "foobar"}, "page": self.page_1}
+            )
+        )
+        self.assertEqual(result, "foobar")
+
+        result2 = tpl.render(
+            template.Context(
+                {"request": request, "foo": {"bar": "baz"}, "page": self.page_1}
+            )
+        )
+        self.assertEqual(result2, "baz")
+
+        self.assertEqual(
+            cache.get(
+                make_wagtail_template_fragment_key(
+                    "test", self.page_1, self.site, [{"bar": "foobar"}]
+                )
+            ),
+            "foobar",
+        )
+        self.assertEqual(
+            cache.get(
+                make_wagtail_template_fragment_key(
+                    "test", self.page_1, self.site, [{"bar": "baz"}]
+                )
+            ),
+            "baz",
         )
 
     def test_doesnt_pollute_cache(self):
