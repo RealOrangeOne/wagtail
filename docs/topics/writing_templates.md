@@ -310,6 +310,9 @@ The `{% wagtailcache %}` tag functions similarly to Django's `{% cache %}` tag, 
     <!-- sidebar -->
 {% endwagtailcache %}
 ```
+
+Much like `{% cache %}`, you can use [`make_template_fragment_key`](django.core.cache.utils.make_template_fragment_key) to obtain the cache key.
+
 (wagtailpagecache)=
 
 ### Page-aware caching
