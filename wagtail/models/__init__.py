@@ -10,7 +10,6 @@ as Page.
 """
 
 import functools
-import hashlib
 import logging
 import posixpath
 import uuid
@@ -71,6 +70,7 @@ from wagtail.coreutils import (
     get_content_type_label,
     get_supported_content_language_variant,
     resolve_model_string,
+    safe_md5,
 )
 from wagtail.fields import StreamField
 from wagtail.forms import TaskStateCommentForm
@@ -2451,7 +2451,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         Customizations to the cache key should be made in ``get_cache_key_components``.
         """
 
-        hasher = hashlib.md5()
+        hasher = safe_md5()
 
         for component in self.get_cache_key_components():
             hasher.update(force_bytes(component))
