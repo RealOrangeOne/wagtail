@@ -10,7 +10,6 @@ from django.test.utils import override_settings
 from django.urls.exceptions import NoReverseMatch
 from django.utils.safestring import SafeString
 
-from wagtail.templatetags.wagtail_cache import WagtailPageCacheNode
 from wagtail.coreutils import (
     get_dummy_request,
     make_wagtail_template_fragment_key,
@@ -21,6 +20,7 @@ from wagtail.models.sites import (
     SITE_ROOT_PATHS_CACHE_KEY,
     SITE_ROOT_PATHS_CACHE_VERSION,
 )
+from wagtail.templatetags.wagtail_cache import WagtailPageCacheNode
 from wagtail.templatetags.wagtailcore_tags import richtext, slugurl
 from wagtail.test.testapp.models import SimplePage
 

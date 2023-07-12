@@ -1,8 +1,9 @@
+from django import template
 from django.template import Variable
 from django.template.exceptions import TemplateSyntaxError
 from django.templatetags.cache import CacheNode as DjangoCacheNode
+
 from wagtail.models import PAGE_TEMPLATE_VAR, Site
-from django import template
 
 register = template.Library()
 
