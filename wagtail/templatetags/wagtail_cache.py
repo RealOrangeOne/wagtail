@@ -47,7 +47,7 @@ class WagtailPageCacheNode(WagtailCacheNode):
         self.vary_on.extend(
             [
                 Variable(f"{PAGE_TEMPLATE_VAR}.cache_key"),
-                Variable(f"{self.CACHE_SITE_TEMPLATE_VAR}.pk"),
+                Variable(f"{self.CACHE_SITE_TEMPLATE_VAR}.cache_key"),
             ]
         )
 

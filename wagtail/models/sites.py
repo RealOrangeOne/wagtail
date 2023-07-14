@@ -8,7 +8,10 @@ from django.db import models
 from django.db.models import Case, IntegerField, Q, When
 from django.db.models.functions import Lower
 from django.http.request import split_domain_port
+from django.utils.encoding import force_bytes
 from django.utils.translation import gettext_lazy as _
+
+from wagtail.coreutils import safe_md5
 
 MATCH_HOSTNAME_PORT = 0
 MATCH_HOSTNAME_DEFAULT = 1
@@ -201,6 +204,37 @@ class Site(models.Model):
                         ]
                     }
                 )
+
+    def get_cache_key_components(self):
+        """
+        The components of a :class:`Site` which make up the :attr:`cache_key`. Any change to a
+        site should be reflected in a change to at least one of these components.
+        """
+
+        return [
+            self.id,
+            self.hostname,
+            self.port,
+            self.site_name,
+            self.root_page_id,
+            self.is_default_site,
+        ]
+
+    @property
+    def cache_key(self):
+        """
+        A generic cache key to identify a site in its current state.
+        Should the site change, so will the key.
+
+        Customizations to the cache key should be made in :attr:`get_cache_key_components`.
+        """
+
+        hasher = safe_md5()
+
+        for component in self.get_cache_key_components():
+            hasher.update(force_bytes(component))
+
+        return hasher.hexdigest()
 
     @staticmethod
     def get_site_root_paths():

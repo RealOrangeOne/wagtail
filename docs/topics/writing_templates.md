@@ -332,12 +332,12 @@ This is identical to:
 ```html+django
 {% wagtail_site as current_site %}
 
-{% wagtailcache 500 "hero" page.cache_key current_site.id %}
+{% wagtailcache 500 "hero" page.cache_key current_site.cache_key %}
     <!-- hero -->
 {% endwagtailcache %}
 ```
 
-Note the use of the page's [cache key](page_cache_key), which ensures that when a page is updated, the cache is automatically invalidated.
+Note the use of the [cache key](page_site_cache_key), which ensures that when a page or site is updated, the cache is automatically invalidated.
 
 If you want to obtain the cache key, you can use `make_wagtail_template_fragment_key` (based on Django's [`make_template_fragment_key`](django.core.cache.utils.make_template_fragment_key)):
 

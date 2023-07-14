@@ -24,7 +24,7 @@ from django.utils.translation import check_for_language, get_supported_language_
 from django.utils.translation import gettext_lazy as _
 
 if TYPE_CHECKING:
-    from wagtail.models import Site
+    from wagtail.models import Page, Site
 
 logger = logging.getLogger(__name__)
 
@@ -567,12 +567,14 @@ class BatchCreator(BatchProcessor):
         return f"{self.created_count}/{self.added_count} {opts.verbose_name_plural} were created successfully."
 
 
-def make_wagtail_template_fragment_key(fragment_name, page, site, vary_on=None):
+def make_wagtail_template_fragment_key(
+    fragment_name, page: "Page", site: "Site", vary_on=None
+):
     """
     A modified version of `make_template_fragment_key` which varies on page and
     site for use with `{% wagtailpagecache %}`.
     """
     if vary_on is None:
         vary_on = []
-    vary_on.extend([page.cache_key, site.id])
+    vary_on.extend([page.cache_key, site.cache_key])
     return make_template_fragment_key(fragment_name, vary_on)

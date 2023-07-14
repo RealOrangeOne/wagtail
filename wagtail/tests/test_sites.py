@@ -17,6 +17,31 @@ class TestSiteNaturalKey(TestCase):
         self.assertEqual(Site.objects.get_by_natural_key("example.com", 8080), site)
 
 
+class TestSiteCacheKey(TestCase):
+    fixtures = ["test.json"]
+
+    def setUp(self):
+        self.site = Site.objects.get()
+        self.other_site = Site.objects.create(
+            hostname="other.example.com", port=80, root_page=self.site.root_page
+        )
+
+    def test_cache_key_consistent(self):
+        self.assertEqual(self.site.cache_key, self.site.cache_key)
+        self.assertEqual(self.other_site.cache_key, self.other_site.cache_key)
+
+    def test_no_queries(self):
+        with self.assertNumQueries(0):
+            self.site.cache_key
+            self.other_site.cache_key
+
+    def test_changes_when_hostname_changes(self):
+        original_cache_key = self.site.cache_key
+        self.site.hostname = "wagtail.org"
+        self.site.save()
+        self.assertNotEqual(self.site.cache_key, original_cache_key)
+
+
 class TestSiteUrl(TestCase):
     def test_root_url_http(self):
         site = Site(hostname="example.com", port=80)

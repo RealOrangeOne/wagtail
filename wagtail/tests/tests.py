@@ -791,7 +791,7 @@ class TestWagtailPageCacheTag(TestCase):
         self.assertEqual(
             make_wagtail_template_fragment_key("test", self.page_1, self.site),
             make_template_fragment_key(
-                "test", vary_on=[self.page_1.cache_key, self.site.id]
+                "test", vary_on=[self.page_1.cache_key, self.site.cache_key]
             ),
         )
 

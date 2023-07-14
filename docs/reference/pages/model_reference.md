@@ -394,6 +394,10 @@ The {meth}`~wagtail.models.Site.find_for_request` function returns the Site obje
         - Everything else will use the ``http://`` scheme and the port will be appended to the end of the hostname (for example ``http://mysite.com:8000/``)
 
     .. automethod:: get_site_root_paths
+
+    .. automethod:: get_cache_key_components
+
+    .. autoattribute:: cache_key
 ```
 
 (locale_model_ref)=
