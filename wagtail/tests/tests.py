@@ -631,13 +631,12 @@ class TestWagtailCacheTag(TestCase):
         self.assertIsNone(cache.get(make_template_fragment_key("test")))  #
 
     def test_invalid_usage(self):
-        with self.assertRaises(TemplateSyntaxError) as e:
+        with self.assertRaisesMessage(
+            TemplateSyntaxError, "'wagtailcache' tag requires at least 2 arguments."
+        ):
             template.Template(
                 """{% load wagtail_cache %}{% wagtailcache 100 %}{{ foo.bar }}{% endwagtailcache %}"""
             )
-        self.assertEqual(
-            e.exception.args[0], "'wagtailcache' tag requires at least 2 arguments."
-        )
 
 
 class TestWagtailPageCacheTag(TestCase):
@@ -797,10 +796,9 @@ class TestWagtailPageCacheTag(TestCase):
         )
 
     def test_invalid_usage(self):
-        with self.assertRaises(TemplateSyntaxError) as e:
+        with self.assertRaisesMessage(
+            TemplateSyntaxError, "'wagtailpagecache' tag requires at least 2 arguments."
+        ):
             template.Template(
                 """{% load wagtail_cache %}{% wagtailpagecache 100 %}{{ foo.bar }}{% endwagtailpagecache %}"""
             )
-        self.assertEqual(
-            e.exception.args[0], "'wagtailpagecache' tag requires at least 2 arguments."
-        )
