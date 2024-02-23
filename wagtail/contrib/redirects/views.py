@@ -1,5 +1,6 @@
 import os
 
+from django.apps import apps
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.core.paginator import InvalidPage, Paginator
 from django.db import transaction
@@ -18,6 +19,7 @@ from wagtail.admin import messages
 from wagtail.admin.auth import PermissionPolicyChecker
 from wagtail.admin.forms.search import SearchForm
 from wagtail.admin.views.reports import ReportView
+from wagtail.contrib.frontend_cache.utils import purge_urls_from_cache
 from wagtail.contrib.redirects import models
 from wagtail.contrib.redirects.filters import RedirectsReportFilterSet
 from wagtail.contrib.redirects.forms import (
@@ -106,12 +108,22 @@ def edit(request, redirect_id):
     ):
         raise PermissionDenied
 
+    frontend_cache_installed = apps.is_installed("wagtail.contrib.frontend_redirect")
+
     if request.method == "POST":
         form = RedirectForm(request.POST, request.FILES, instance=theredirect)
         if form.is_valid():
+            if frontend_cache_installed:
+                old_links = set(theredirect.old_links())
+
             with transaction.atomic():
                 form.save()
                 log(instance=theredirect, action="wagtail.edit")
+
+            if frontend_cache_installed:
+                old_links.update(theredirect.old_links())
+                purge_urls_from_cache(old_links)
+
             messages.success(
                 request,
                 _("Redirect '%(redirect_title)s' updated.")
@@ -155,6 +167,10 @@ def delete(request, redirect_id):
         with transaction.atomic():
             log(instance=theredirect, action="wagtail.delete")
             theredirect.delete()
+
+        if apps.is_installed("wagtail.contrib.frontend_redirect"):
+            purge_urls_from_cache(theredirect.old_links())
+
         messages.success(
             request,
             _("Redirect '%(redirect_title)s' deleted.")

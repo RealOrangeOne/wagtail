@@ -342,7 +342,7 @@ class TestBackendConfiguration(TestCase):
         backends.get("cloudfront").purge("http://torchbox.com/blog/")
 
         _create_invalidation.assert_called_once_with(
-            "frontend", ["/home/events/christmas/"]
+            "frontend", {"/home/events/christmas/"}
         )
 
     def test_multiple(self):
@@ -392,7 +392,7 @@ class TestBackendConfiguration(TestCase):
         self.assertEqual(backends["default"].cache_netloc, "localhost:8000")
 
 
-PURGED_URLS = []
+PURGED_URLS = set()
 
 
 class MockBackend(BaseBackend):
@@ -400,7 +400,7 @@ class MockBackend(BaseBackend):
         pass
 
     def purge(self, url):
-        PURGED_URLS.append(url)
+        PURGED_URLS.add(url)
 
 
 class MockCloudflareBackend(CloudflareBackend):
@@ -411,7 +411,7 @@ class MockCloudflareBackend(CloudflareBackend):
         if len(urls) > self.CHUNK_SIZE:
             raise Exception("Cloudflare backend is not chunking requests as expected")
 
-        PURGED_URLS.extend(urls)
+        PURGED_URLS.update(urls)
 
 
 @override_settings(
@@ -425,28 +425,27 @@ class TestCachePurgingFunctions(TestCase):
     fixtures = ["test.json"]
 
     def setUp(self):
-        # Reset PURGED_URLS to an empty list
-        PURGED_URLS[:] = []
+        PURGED_URLS.clear()
 
     def test_purge_url_from_cache(self):
         purge_url_from_cache("http://localhost/foo")
-        self.assertEqual(PURGED_URLS, ["http://localhost/foo"])
+        self.assertEqual(PURGED_URLS, {"http://localhost/foo"})
 
     def test_purge_urls_from_cache(self):
         purge_urls_from_cache(["http://localhost/foo", "http://localhost/bar"])
-        self.assertEqual(PURGED_URLS, ["http://localhost/foo", "http://localhost/bar"])
+        self.assertEqual(PURGED_URLS, {"http://localhost/foo", "http://localhost/bar"})
 
     def test_purge_page_from_cache(self):
         page = EventIndex.objects.get(url_path="/home/events/")
         purge_page_from_cache(page)
         self.assertEqual(
-            PURGED_URLS, ["http://localhost/events/", "http://localhost/events/past/"]
+            PURGED_URLS, {"http://localhost/events/", "http://localhost/events/past/"}
         )
 
     def test_purge_pages_from_cache(self):
         purge_pages_from_cache(EventIndex.objects.all())
         self.assertEqual(
-            PURGED_URLS, ["http://localhost/events/", "http://localhost/events/past/"]
+            PURGED_URLS, {"http://localhost/events/", "http://localhost/events/past/"}
         )
 
     def test_purge_batch(self):
@@ -458,11 +457,11 @@ class TestCachePurgingFunctions(TestCase):
 
         self.assertEqual(
             PURGED_URLS,
-            [
+            {
                 "http://localhost/events/",
                 "http://localhost/events/past/",
                 "http://localhost/foo",
-            ],
+            },
         )
 
 
@@ -476,11 +475,11 @@ class TestCachePurgingFunctions(TestCase):
 class TestCloudflareCachePurgingFunctions(TestCase):
     def setUp(self):
         # Reset PURGED_URLS to an empty list
-        PURGED_URLS[:] = []
+        PURGED_URLS.clear()
 
     def test_cloudflare_purge_batch_chunked(self):
         batch = PurgeBatch()
-        urls = [f"https://localhost/foo{i}" for i in range(1, 65)]
+        urls = {f"https://localhost/foo{i}" for i in range(1, 65)}
         batch.add_urls(urls)
         batch.purge()
 
@@ -499,20 +498,20 @@ class TestCachePurgingSignals(TestCase):
 
     def setUp(self):
         # Reset PURGED_URLS to an empty list
-        PURGED_URLS[:] = []
+        PURGED_URLS.clear()
 
     def test_purge_on_publish(self):
         page = EventIndex.objects.get(url_path="/home/events/")
         page.save_revision().publish()
         self.assertEqual(
-            PURGED_URLS, ["http://localhost/events/", "http://localhost/events/past/"]
+            PURGED_URLS, {"http://localhost/events/", "http://localhost/events/past/"}
         )
 
     def test_purge_on_unpublish(self):
         page = EventIndex.objects.get(url_path="/home/events/")
         page.unpublish()
         self.assertEqual(
-            PURGED_URLS, ["http://localhost/events/", "http://localhost/events/past/"]
+            PURGED_URLS, {"http://localhost/events/", "http://localhost/events/past/"}
         )
 
     def test_purge_with_unroutable_page(self):
@@ -520,7 +519,7 @@ class TestCachePurgingSignals(TestCase):
         page = EventIndex(title="new top-level page")
         root.add_child(instance=page)
         page.save_revision().publish()
-        self.assertEqual(PURGED_URLS, [])
+        self.assertEqual(PURGED_URLS, set())
 
     @override_settings(
         ROOT_URLCONF="wagtail.test.urls_multilang",
@@ -528,20 +527,19 @@ class TestCachePurgingSignals(TestCase):
         WAGTAILFRONTENDCACHE_LANGUAGES=["en", "fr", "pt-br"],
     )
     def test_purge_on_publish_in_multilang_env(self):
-        PURGED_URLS[:] = []  # reset PURGED_URLS to the empty list
         page = EventIndex.objects.get(url_path="/home/events/")
         page.save_revision().publish()
 
         self.assertEqual(
             PURGED_URLS,
-            [
+            {
                 "http://localhost/en/events/",
                 "http://localhost/en/events/past/",
                 "http://localhost/fr/events/",
                 "http://localhost/fr/events/past/",
                 "http://localhost/pt-br/events/",
                 "http://localhost/pt-br/events/past/",
-            ],
+            },
         )
 
     @override_settings(
@@ -551,18 +549,17 @@ class TestCachePurgingSignals(TestCase):
         WAGTAIL_CONTENT_LANGUAGES=[("en", "English"), ("fr", "French")],
     )
     def test_purge_on_publish_with_i18n_enabled(self):
-        PURGED_URLS[:] = []  # reset PURGED_URLS to the empty list
         page = EventIndex.objects.get(url_path="/home/events/")
         page.save_revision().publish()
 
         self.assertEqual(
             PURGED_URLS,
-            [
+            {
                 "http://localhost/en/events/",
                 "http://localhost/en/events/past/",
                 "http://localhost/fr/events/",
                 "http://localhost/fr/events/past/",
-            ],
+            },
         )
 
     @override_settings(
@@ -572,12 +569,11 @@ class TestCachePurgingSignals(TestCase):
     )
     def test_purge_on_publish_without_i18n_enabled(self):
         # It should ignore WAGTAIL_CONTENT_LANGUAGES as WAGTAIL_I18N_ENABLED isn't set
-        PURGED_URLS[:] = []  # reset PURGED_URLS to the empty list
         page = EventIndex.objects.get(url_path="/home/events/")
         page.save_revision().publish()
         self.assertEqual(
             PURGED_URLS,
-            ["http://localhost/en/events/", "http://localhost/en/events/past/"],
+            {"http://localhost/en/events/", "http://localhost/en/events/past/"},
         )
 
 
@@ -591,13 +587,13 @@ class TestPurgeBatchClass(TestCase):
         batch = PurgeBatch()
         batch.add_url("http://localhost/foo")
 
-        self.assertEqual(batch.urls, ["http://localhost/foo"])
+        self.assertEqual(batch.urls, {"http://localhost/foo"})
 
     def test_add_urls(self):
         batch = PurgeBatch()
         batch.add_urls(["http://localhost/foo", "http://localhost/bar"])
 
-        self.assertEqual(batch.urls, ["http://localhost/foo", "http://localhost/bar"])
+        self.assertEqual(batch.urls, {"http://localhost/foo", "http://localhost/bar"})
 
     def test_add_page(self):
         page = EventIndex.objects.get(url_path="/home/events/")
@@ -606,7 +602,7 @@ class TestPurgeBatchClass(TestCase):
         batch.add_page(page)
 
         self.assertEqual(
-            batch.urls, ["http://localhost/events/", "http://localhost/events/past/"]
+            batch.urls, {"http://localhost/events/", "http://localhost/events/past/"}
         )
 
     def test_add_pages(self):
@@ -614,7 +610,7 @@ class TestPurgeBatchClass(TestCase):
         batch.add_pages(EventIndex.objects.all())
 
         self.assertEqual(
-            batch.urls, ["http://localhost/events/", "http://localhost/events/past/"]
+            batch.urls, {"http://localhost/events/", "http://localhost/events/past/"}
         )
 
     def test_multiple_calls(self):
@@ -627,11 +623,11 @@ class TestPurgeBatchClass(TestCase):
 
         self.assertEqual(
             batch.urls,
-            [
+            {
                 "http://localhost/events/",
                 "http://localhost/events/past/",
                 "http://localhost/foo",
-            ],
+            },
         )
 
     @mock.patch("wagtail.contrib.frontend_cache.backends.requests.delete")
@@ -654,10 +650,8 @@ class TestPurgeBatchClass(TestCase):
         )
         requests_delete_mock.side_effect = http_error
 
-        page = EventIndex.objects.get(url_path="/home/events/")
-
         batch = PurgeBatch()
-        batch.add_page(page)
+        batch.add_url("http://localhost/events/")
 
         with self.assertLogs(level="ERROR") as log_output:
             batch.purge(backend_settings=backend_settings)

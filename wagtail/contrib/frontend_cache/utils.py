@@ -132,14 +132,14 @@ class PurgeBatch:
     """Represents a list of URLs to be purged in a single request"""
 
     def __init__(self, urls=None):
-        self.urls = []
+        self.urls = set()
 
         if urls is not None:
             self.add_urls(urls)
 
     def add_url(self, url):
         """Adds a single URL"""
-        self.urls.append(url)
+        self.urls.add(url)
 
     def add_urls(self, urls):
         """
@@ -148,7 +148,7 @@ class PurgeBatch:
         This is equivalent to running ``.add_url(url)`` on each URL
         individually
         """
-        self.urls.extend(urls)
+        self.urls.update(urls)
 
     def add_page(self, page):
         """
@@ -181,4 +181,4 @@ class PurgeBatch:
         - backends can be set to a list of backend names. When set, the invalidation request
           will only be sent to these backends
         """
-        purge_urls_from_cache(self.urls, backend_settings, backends)
+        purge_urls_from_cache(list(self.urls), backend_settings, backends)
